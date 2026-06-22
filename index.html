@@ -175,6 +175,8 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
       <div class="cl-item"><div class="cl-dot" style="color:#7c3aed"></div>1차 종료엣지</div>
       <div class="cl-item"><div class="cl-dot" style="color:#ea580c"></div>2차 시작엣지</div>
       <div class="cl-item"><div class="cl-dot" style="color:#16a34a"></div>2차 종료엣지</div>
+      <div class="cl-item"><div class="cl-line" style="background:#2563eb;height:2px;border-top:2px dashed #2563eb;background:transparent"></div>Edge최소두께</div>
+      <div class="cl-item"><div class="cl-line" style="height:2px;border-top:2px dashed #f59e0b;background:transparent"></div>2차 기준값(Threshold)</div>
     </div>
     <canvas id="chartAll" height="170"></canvas>
   </div>
@@ -406,6 +408,19 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
           </div>
         </div>
 
+        <div class="step" style="background:#faf5ff;border-color:#c4b5fd;">
+          <div class="step-num" style="background:#7c3aed;">3</div>
+          <div class="step-body">
+            <div class="s-tag" style="background:#ede9fe;color:#5b21b6;">조건 3</div>
+            <div class="s-title">역방향 스캔</div>
+            <div class="s-detail">
+              종료 엣지는 데이터의 <strong>맨 끝(930mm)에서부터 반대 방향(←)으로</strong> 연산합니다.<br>
+              조건 1 · 2를 모두 만족하는 <strong>첫 번째 위치</strong>를 종료 엣지로 채택합니다.<br>
+              <span style="color:#6b7280;font-size:.8rem;">※ 순방향 스캔과 달리, 소재 우측 하강 엣지를 정확히 검출하기 위한 방식입니다.</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -586,16 +601,18 @@ const get = x => rawMap.get(x) ?? 0;
 // ─────────────────────────────────────────────────────────
 function detectEdge1(minThk, edgeCut) {
   let start=null, end=null;
+  // 시작 엣지: 순방향 스캔 (100 → 930)
   for(const [x,t] of RAW){
     const tm5=get(x-5), tp5=get(x+5);
-    if(!start){
-      const c1=(t-tm5)>edgeCut, c2=t>minThk && t<tp5;
-      if(c1&&c2) start={x,t,tm5,tp5,diff:+(t-tm5).toFixed(1)};
-    } else if(!end){
-      const tm5e=get(x-5), tp5e=get(x+5);
-      const c1=(t-tp5e)>edgeCut, c2=t>minThk && t<tm5e;
-      if(c1&&c2){end={x,t,tm5:tm5e,tp5:tp5e,diff:+(t-tp5e).toFixed(1)};break;}
-    }
+    const c1=(t-tm5)>edgeCut, c2=t>minThk && t<tp5;
+    if(c1&&c2){start={x,t,tm5,tp5,diff:+(t-tm5).toFixed(1)};break;}
+  }
+  // 종료 엣지: 역방향 스캔 (930 → 100) — 소재 끝에서부터 역으로 탐색
+  for(let i=RAW.length-1;i>=0;i--){
+    const [x,t]=RAW[i];
+    const tm5=get(x-5), tp5=get(x+5);
+    const c1=(t-tp5)>edgeCut, c2=t>minThk && t<tm5;
+    if(c1&&c2){end={x,t,tm5,tp5,diff:+(t-tp5).toFixed(1)};break;}
   }
   return {start,end};
 }
@@ -716,11 +733,14 @@ const CHART_OPTS=(xMin,xMax,vlines,extra={})=>({
 // All chart
 const chartAll = new Chart($('chartAll'),{
   type:'line',
-  data:{datasets:[{
-    label:'두께 (um)',
-    data:RAW.map(d=>({x:d[0],y:d[1]})),
-    borderColor:'#3b82f6',borderWidth:1.5,pointRadius:0,fill:false,tension:0
-  }]},
+  data:{datasets:[
+    {label:'두께 (um)',data:RAW.map(d=>({x:d[0],y:d[1]})),
+     borderColor:'#3b82f6',borderWidth:1.5,pointRadius:0,fill:false,tension:0},
+    {label:'Edge최소두께',data:[{x:100,y:50},{x:930,y:50}],
+     borderColor:'#2563eb',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false,tension:0},
+    {label:'2차 기준값(Threshold)',data:[],
+     borderColor:'#f59e0b',borderWidth:1.5,borderDash:[3,3],pointRadius:0,fill:false,tension:0}
+  ]},
   options:CHART_OPTS(100,930,[
     {xVal:214,color:'#dc2626',label:'1차 시작(214)',yOff:15},
     {xVal:719,color:'#7c3aed',label:'1차 종료(719)',yOff:15},
@@ -742,7 +762,8 @@ const chartEdge1 = new Chart($('chartEdge1'),{
   type:'scatter',
   data:{datasets:[
     {label:'시작구간',data:[],showLine:true,borderColor:'#3b82f6',borderWidth:2,pointRadius:4,pointBackgroundColor:'#3b82f6',fill:false,tension:0},
-    {label:'종료구간',data:[],showLine:true,borderColor:'#3b82f6',borderWidth:2,pointRadius:4,pointBackgroundColor:'#3b82f6',fill:false,tension:0}
+    {label:'종료구간',data:[],showLine:true,borderColor:'#3b82f6',borderWidth:2,pointRadius:4,pointBackgroundColor:'#3b82f6',fill:false,tension:0},
+    {label:'Edge최소두께',data:[],showLine:true,borderColor:'#2563eb',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false}
   ]},
   options:{
     responsive:true,
@@ -767,7 +788,8 @@ const chartEdge2 = new Chart($('chartEdge2'),{
   data:{datasets:[
     {label:'시작구간',data:[],showLine:true,borderColor:'#3b82f6',borderWidth:2,pointRadius:4,pointBackgroundColor:'#3b82f6',fill:false,tension:0},
     {label:'종료구간',data:[],showLine:true,borderColor:'#3b82f6',borderWidth:2,pointRadius:4,pointBackgroundColor:'#3b82f6',fill:false,tension:0},
-    {label:'Threshold',data:[],showLine:true,borderColor:'#f59e0b',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false}
+    {label:'Threshold',data:[],showLine:true,borderColor:'#f59e0b',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false},
+    {label:'Edge최소두께',data:[],showLine:true,borderColor:'#2563eb',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false}
   ]},
   options:{
     responsive:true,
@@ -915,13 +937,17 @@ function updateAll(){
   const e1sX = s1?.x??214, e1eX = e1?.x??719;
   const e2sX = s2?.x??216, e2eX = e2?.x??718;
 
-  // all chart vlines
+  // all chart vlines + horizontal reference lines
   chartAll.options.plugins.vlines.lines = [
     {xVal:e1sX,color:'#dc2626',label:`1차시작(${e1sX})`,yOff:15},
     {xVal:e1eX,color:'#7c3aed',label:`1차종료(${e1eX})`,yOff:15},
     {xVal:e2sX,color:'#ea580c',label:`2차시작(${e2sX})`,dash:[4,3],yOff:33},
     {xVal:e2eX,color:'#16a34a',label:`2차종료(${e2eX})`,dash:[4,3],yOff:33}
   ];
+  chartAll.data.datasets[1].data = [{x:100,y:minThk},{x:930,y:minThk}];
+  chartAll.data.datasets[1].label = `Edge최소두께 (${minThk} um)`;
+  chartAll.data.datasets[2].data = threshold!=null ? [{x:100,y:threshold},{x:930,y:threshold}] : [];
+  chartAll.data.datasets[2].label = threshold!=null ? `2차 기준값 (${threshold} um)` : '2차 기준값';
   chartAll.update('none');
 
   // edge1 chart
@@ -933,10 +959,17 @@ function updateAll(){
     d.x===e1sX?'#dc2626':'#3b82f6');
   chartEdge1.data.datasets[1].pointBackgroundColor = chartEdge1.data.datasets[1].data.map(d=>
     d.x===e1eX?'#7c3aed':'#3b82f6');
+  // MinThickness line across both edge1 segments
+  const edge1XMin = Math.min(lo1, lo2) - 2;
+  const edge1XMax = Math.max(hi1, hi2) + 2;
+  chartEdge1.data.datasets[2].data = [{x:edge1XMin,y:minThk},{x:edge1XMax,y:minThk}];
+  chartEdge1.data.datasets[2].label = `Edge최소두께 (${minThk} um)`;
   chartEdge1.options.plugins.vlines.lines=[
     {xVal:e1sX,color:'#dc2626',label:`시작(${e1sX})`},
     {xVal:e1eX,color:'#7c3aed',label:`종료(${e1eX})`}
   ];
+  chartEdge1.options.plugins.legend.display = true;
+  chartEdge1.options.plugins.legend.labels = {boxWidth:14,font:{size:11}};
   chartEdge1.update('none');
 
   // edge2 chart
@@ -955,7 +988,12 @@ function updateAll(){
     ? [Math.min(...allX),Math.max(...allX)].map(x=>({x,y:threshold}))
     : [];
   chartEdge2.data.datasets[2].data=thrData;
-  chartEdge2.data.datasets[2].label=`Threshold ${threshold??''} um`;
+  chartEdge2.data.datasets[2].label=threshold!=null?`Threshold (${threshold} um)`:'Threshold';
+  // MinThickness line for chartEdge2
+  const edge2XMin = Math.min(lo3, lo4) - 2;
+  const edge2XMax = Math.max(hi3, hi4) + 2;
+  chartEdge2.data.datasets[3].data = [{x:edge2XMin,y:minThk},{x:edge2XMax,y:minThk}];
+  chartEdge2.data.datasets[3].label = `Edge최소두께 (${minThk} um)`;
   chartEdge2.options.plugins.vlines.lines=[
     {xVal:e2sX,color:'#ea580c',label:`2차시작(${e2sX})`},
     {xVal:e2eX,color:'#16a34a',label:`2차종료(${e2eX})`}
