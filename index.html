@@ -176,7 +176,7 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
       <div class="cl-item"><div class="cl-dot" style="color:#ea580c"></div>2차 시작엣지</div>
       <div class="cl-item"><div class="cl-dot" style="color:#16a34a"></div>2차 종료엣지</div>
     </div>
-    <canvas id="chartAll" height="260"></canvas>
+    <canvas id="chartAll" height="170"></canvas>
   </div>
 </section>
 
@@ -263,9 +263,47 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
 <section id="edge1">
   <h2>🔵 1차 엣지 검출 <span class="tag">순차 스캔</span></h2>
 
-  <div class="info" style="margin-bottom:1rem;">
-    모든 위치를 처음부터 끝까지 <strong>순차 스캔</strong>합니다.
-    각 위치 X에서 X−5, X+5의 두께를 함께 보고 <strong>2가지 조건</strong>을 모두 만족하면 엣지로 판별합니다.
+  <!-- 스캔 방식 설명 -->
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="card-title">📋 스캔 방식 개요</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
+      <div style="background:#f8fafc;border-radius:8px;padding:.85rem 1rem;border:1px solid #e2e8f0;">
+        <div style="font-size:.75rem;font-weight:800;color:#2563eb;margin-bottom:.4rem;">🔍 스캔 순서</div>
+        <div style="font-size:.84rem;color:#334155;line-height:1.7;">
+          모션위치 <strong>100mm → 930mm</strong> 방향으로<br>
+          1mm 간격으로 전체 위치를 <strong>순서대로 검사</strong>합니다.<br>
+          시작 엣지를 먼저 찾고, 이후 종료 엣지를 찾습니다.
+        </div>
+      </div>
+      <div style="background:#f8fafc;border-radius:8px;padding:.85rem 1rem;border:1px solid #e2e8f0;">
+        <div style="font-size:.75rem;font-weight:800;color:#2563eb;margin-bottom:.4rem;">📏 X±5 참조 이유</div>
+        <div style="font-size:.84rem;color:#334155;line-height:1.7;">
+          현재 위치만 보면 노이즈에 취약합니다.<br>
+          <strong>5mm 앞(X−5)과 5mm 뒤(X+5)</strong>를 함께 보면<br>
+          두께가 실제로 급격히 변했는지 안정적으로 판별할 수 있습니다.
+        </div>
+      </div>
+      <div style="background:#fff1f2;border-radius:8px;padding:.85rem 1rem;border:1px solid #fecaca;">
+        <div style="font-size:.75rem;font-weight:800;color:#dc2626;margin-bottom:.4rem;">↗ 시작 엣지 — 상승구간 판별</div>
+        <div style="font-size:.84rem;color:#334155;line-height:1.7;">
+          두께가 <strong>급격히 올라가는 구간</strong>에서 시작 엣지를 찾습니다.<br>
+          · 조건1: X와 X−5 사이에 <em>큰 폭의 상승</em>이 있어야 함<br>
+          · 조건2: 현재 두께가 충분히 크고, X+5보다 <em>아직 낮아야</em> 함(상승 중)
+        </div>
+      </div>
+      <div style="background:#faf5ff;border-radius:8px;padding:.85rem 1rem;border:1px solid #e9d5ff;">
+        <div style="font-size:.75rem;font-weight:800;color:#7c3aed;margin-bottom:.4rem;">↘ 종료 엣지 — 하강구간 판별</div>
+        <div style="font-size:.84rem;color:#334155;line-height:1.7;">
+          두께가 <strong>급격히 내려가는 구간</strong>에서 종료 엣지를 찾습니다.<br>
+          · 조건1: X와 X+5 사이에 <em>큰 폭의 하강</em>이 있어야 함<br>
+          · 조건2: 현재 두께가 충분히 크고, X−5보다 <em>이미 낮아야</em> 함(하강 중)
+        </div>
+      </div>
+    </div>
+    <div class="warn" style="margin-top:.8rem;">
+      ⚠️ <strong>두 조건이 모두 만족될 때만</strong> 엣지로 인정합니다.
+      하나라도 실패하면 해당 위치는 건너뛰고 다음 위치로 이동합니다.
+    </div>
   </div>
 
   <div class="two-col">
@@ -374,7 +412,7 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
 
   <div class="chart-wrap" style="margin-top:1rem;">
     <div class="chart-title">1차 엣지 구간 확대 (시작 / 종료)</div>
-    <canvas id="chartEdge1" height="230"></canvas>
+    <canvas id="chartEdge1" height="160"></canvas>
   </div>
 </section>
 
@@ -492,7 +530,7 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
 
   <div class="chart-wrap" style="margin-top:1rem;">
     <div class="chart-title">2차 엣지 구간 확대 + Threshold 기준선</div>
-    <canvas id="chartEdge2" height="230"></canvas>
+    <canvas id="chartEdge2" height="160"></canvas>
   </div>
 </section>
 
@@ -624,7 +662,7 @@ const vlinePlugin={
   afterDraw(chart,_,opts){
     if(!opts||!opts.lines) return;
     const{ctx,chartArea:ca,scales:{x}}=chart;
-    opts.lines.forEach(({xVal,color,label,dash})=>{
+    opts.lines.forEach(({xVal,color,label,dash,yOff})=>{
       const px=x.getPixelForValue(xVal);
       if(px<ca.left||px>ca.right) return;
       ctx.save();
@@ -635,8 +673,13 @@ const vlinePlugin={
         ctx.setLineDash([]);
         ctx.fillStyle=color; ctx.font='bold 11px sans-serif';
         const tw=ctx.measureText(label).width;
-        const lx=px+ca.right-px>tw+6?px+4:px-tw-4;
-        ctx.fillText(label,lx,ca.top+15);
+        const lx=(ca.right-px)>tw+8?px+4:px-tw-4;
+        const ly=ca.top+(yOff||15);
+        // label background for readability
+        ctx.fillStyle='rgba(255,255,255,0.75)';
+        ctx.fillRect(lx-2,ly-11,tw+4,14);
+        ctx.fillStyle=color;
+        ctx.fillText(label,lx,ly);
       }
       ctx.restore();
     });
@@ -679,10 +722,10 @@ const chartAll = new Chart($('chartAll'),{
     borderColor:'#3b82f6',borderWidth:1.5,pointRadius:0,fill:false,tension:0
   }]},
   options:CHART_OPTS(100,930,[
-    {xVal:214,color:'#dc2626',label:'1차 시작(214)'},
-    {xVal:719,color:'#7c3aed',label:'1차 종료(719)'},
-    {xVal:216,color:'#ea580c',label:'2차 시작(216)',dash:[4,3]},
-    {xVal:718,color:'#16a34a',label:'2차 종료(718)',dash:[4,3]}
+    {xVal:214,color:'#dc2626',label:'1차 시작(214)',yOff:15},
+    {xVal:719,color:'#7c3aed',label:'1차 종료(719)',yOff:15},
+    {xVal:216,color:'#ea580c',label:'2차 시작(216)',dash:[4,3],yOff:33},
+    {xVal:718,color:'#16a34a',label:'2차 종료(718)',dash:[4,3],yOff:33}
   ])
 });
 
@@ -874,10 +917,10 @@ function updateAll(){
 
   // all chart vlines
   chartAll.options.plugins.vlines.lines = [
-    {xVal:e1sX,color:'#dc2626',label:`1차시작(${e1sX})`},
-    {xVal:e1eX,color:'#7c3aed',label:`1차종료(${e1eX})`},
-    {xVal:e2sX,color:'#ea580c',label:`2차시작(${e2sX})`,dash:[4,3]},
-    {xVal:e2eX,color:'#16a34a',label:`2차종료(${e2eX})`,dash:[4,3]}
+    {xVal:e1sX,color:'#dc2626',label:`1차시작(${e1sX})`,yOff:15},
+    {xVal:e1eX,color:'#7c3aed',label:`1차종료(${e1eX})`,yOff:15},
+    {xVal:e2sX,color:'#ea580c',label:`2차시작(${e2sX})`,dash:[4,3],yOff:33},
+    {xVal:e2eX,color:'#16a34a',label:`2차종료(${e2eX})`,dash:[4,3],yOff:33}
   ];
   chartAll.update('none');
 
