@@ -184,6 +184,12 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
 <section id="params">
   <h2>⚙️ 파라미터 설정 <span class="tag">실시간 반영</span></h2>
 
+  <div style="display:flex;justify-content:flex-end;margin-bottom:.7rem;">
+    <button id="btn-reset" onclick="resetParams()" style="display:flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;background:#fff;border:2px solid #e2e8f0;border-radius:8px;font-size:.84rem;font-weight:700;color:#64748b;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='#2563eb';this.style.color='#2563eb';" onmouseout="this.style.borderColor='#e2e8f0';this.style.color='#64748b';">
+      ↺ 기본값으로 초기화
+    </button>
+  </div>
+
   <div class="param-grid">
     <!-- 1차 파라미터 -->
     <div class="param-group">
@@ -932,6 +938,13 @@ const io=new IntersectionObserver(entries=>{
   });
 },{threshold:.35});
 sections.forEach(s=>io.observe(s));
+
+function resetParams(){
+  $('sl-minthk').value = 50;
+  $('sl-edgecut').value = 10;
+  $('sl-ratio').value   = 0.90;
+  updateAll();
+}
 
 // Initial render
 updateAll();
