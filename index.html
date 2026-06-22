@@ -221,14 +221,6 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
         <div class="slider-range"><span>0.50</span><span>1.00</span></div>
       </div>
 
-      <div class="slider-item">
-        <div class="slider-header">
-          <span class="slider-name">내림차순 상위 N번째</span>
-          <span class="slider-val" id="v-nth">50</span>
-        </div>
-        <input type="range" id="sl-nth" min="1" max="150" value="50" step="1">
-        <div class="slider-range"><span>1번째</span><span>150번째</span></div>
-      </div>
     </div>
   </div>
 
@@ -526,7 +518,7 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
         <tr><td>최소 두께</td><td id="tp-minthk">50 um</td><td>50 um</td><td>1차 엣지 후보 최소 두께</td><td>조건설정</td></tr>
         <tr><td>Edge Cut</td><td id="tp-edgecut">10 um</td><td>10 um</td><td>1차 엣지 두께 변화량 기준</td><td>관리자 설정</td></tr>
         <tr><td>탐색 범위 여유</td><td>±10 mm</td><td>±10 mm</td><td>1차 엣지 기준 확장 범위</td><td>고정</td></tr>
-        <tr><td>내림차순 N번째</td><td id="tp-nth">50번째</td><td>50번째</td><td>기준두께 산출 기준 순위</td><td>고정</td></tr>
+        <tr><td>내림차순 N번째</td><td>50번째</td><td>50번째</td><td>기준두께 산출 기준 순위</td><td>고정</td></tr>
         <tr><td>EdgeFindRatio</td><td id="tp-ratio">0.90</td><td>0.90</td><td>기준두께 = N번째값 × Ratio</td><td>히든탭</td></tr>
         <tr><td>Threshold (계산값)</td><td id="tp-thr">126.0 um</td><td>—</td><td>2차 엣지 판별 임계값</td><td>자동계산</td></tr>
       </tbody>
@@ -752,13 +744,12 @@ function updateAll(){
   const minThk  = +$('sl-minthk').value;
   const edgeCut = +$('sl-edgecut').value;
   const ratio   = +$('sl-ratio').value;
-  const nth     = +$('sl-nth').value;
+  const nth     = 50; // 고정값
 
   // slider value displays
   txt('v-minthk', minThk+' um');
   txt('v-edgecut', edgeCut+' um');
   txt('v-ratio', ratio.toFixed(2));
-  txt('v-nth', nth+'번째');
 
   // Compute
   const {start:s1,end:e1} = detectEdge1(minThk,edgeCut);
@@ -868,7 +859,7 @@ function updateAll(){
   txt('t-e2sx', s2?s2.x:'—'); txt('t-e2st', s2?s2.t+'':'—');
   txt('t-e2ex', e2?e2.x:'—'); txt('t-e2et', e2?e2.t+'':'—');
   txt('tp-minthk', minThk+' um'); txt('tp-edgecut', edgeCut+' um');
-  txt('tp-nth', nth+'번째'); txt('tp-ratio', ratio.toFixed(2));
+  txt('tp-ratio', ratio.toFixed(2));
   txt('tp-thr', threshold!=null?threshold+' um':'—');
 
   // ── Charts ──
@@ -927,7 +918,7 @@ function updateAll(){
 // ─────────────────────────────────────────────────────────
 // Event listeners
 // ─────────────────────────────────────────────────────────
-['sl-minthk','sl-edgecut','sl-ratio','sl-nth'].forEach(id=>{
+['sl-minthk','sl-edgecut','sl-ratio'].forEach(id=>{
   $(id).addEventListener('input', updateAll);
 });
 
