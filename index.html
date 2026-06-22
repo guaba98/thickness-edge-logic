@@ -141,10 +141,10 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
 
 <!-- 상단 고정 결과 바 -->
 <div class="live-bar">
-  <span><span class="dot" style="background:#dc2626"></span>1차 시작: <span class="lv" id="lb-e1s">X=214</span></span>
-  <span><span class="dot" style="background:#7c3aed"></span>1차 종료: <span class="lv" id="lb-e1e">X=719</span></span>
-  <span><span class="dot" style="background:#ea580c"></span>2차 시작(최종): <span class="lv" id="lb-e2s">X=216</span></span>
-  <span><span class="dot" style="background:#16a34a"></span>2차 종료(최종): <span class="lv" id="lb-e2e">X=718</span></span>
+  <span><span class="dot" style="background:#dc2626"></span>1차 시작: <span class="lv" id="lb-e1s">214 mm</span></span>
+  <span><span class="dot" style="background:#7c3aed"></span>1차 종료: <span class="lv" id="lb-e1e">719 mm</span></span>
+  <span><span class="dot" style="background:#ea580c"></span>2차 시작(최종): <span class="lv" id="lb-e2s">216 mm</span></span>
+  <span><span class="dot" style="background:#16a34a"></span>2차 종료(최종): <span class="lv" id="lb-e2e">718 mm</span></span>
 </div>
 
 <main>
@@ -152,6 +152,17 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
 <!-- ── 개요 ── -->
 <section id="overview">
   <h2>🔍 개요 <span class="tag">알고리즘 흐름</span></h2>
+
+  <!-- 배경 설명 -->
+  <div class="card" style="background:#f0f9ff;border-color:#bae6fd;margin-bottom:1rem;">
+    <div class="card-title" style="color:#0369a1;">💡 이 장비는 무엇을 하나요?</div>
+    <div style="font-size:.9rem;color:#0c4a6e;line-height:1.8;">
+      모션 스테이지에 달린 키엔스 센서가 전극 위를 지나가며 <strong>1mm 간격으로 두께를 측정</strong>합니다.<br>
+      이 알고리즘은 두께 측정값의 급격한 변화를 감지해 <strong>전극 한 패턴의 시작 위치(시작 엣지)와 끝 위치(종료 엣지)를 자동으로 찾아냅니다.</strong><br>
+      <span style="color:#0369a1;font-size:.84rem;">찾아낸 위치는 이후 공정(절단, 도포 등)의 기준 좌표로 사용됩니다.</span>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">전체 처리 흐름</div>
     <div class="flow">
@@ -163,10 +174,30 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
     </div>
     <div class="info" style="margin-top:1rem;">
       모션 스테이지가 이동하면서 mm 단위로 두께(um)를 측정합니다.
-      <strong>1차 엣지</strong>로 소재 경계를 대략 찾고, 그 범위 안에서
-      <strong>2차 엣지(최종)</strong>를 통계 기반으로 정밀하게 계산합니다.
+      <strong>1차 엣지는 탐색 범위를 좁히기 위한 중간 단계</strong>이며, 이후 공정에 직접 사용되지 않습니다.
+      최종적으로 사용되는 위치는 <strong style="color:#ea580c;">2차 엣지(최종)</strong>입니다.
     </div>
   </div>
+
+  <!-- 용어 설명 -->
+  <details style="margin-bottom:1rem;">
+    <summary style="cursor:pointer;font-size:.88rem;font-weight:700;color:#374151;padding:.7rem 1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;list-style:none;display:flex;align-items:center;gap:.5rem;">
+      📖 용어 설명 (처음 보시는 분은 펼쳐보세요)
+    </summary>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px;padding:1rem;">
+      <table class="tbl">
+        <thead><tr><th>용어</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td><strong>엣지(Edge)</strong></td><td>전극 패턴의 시작 경계선 또는 끝 경계선. 두께가 0에서 급상승하거나 급하강하는 지점.</td></tr>
+          <tr><td><strong>um (마이크로미터)</strong></td><td>두께 단위. 1 um = 0.001 mm. 이 소재의 두께는 약 140 um.</td></tr>
+          <tr><td><strong>RawData</strong></td><td>센서가 각 모션위치에서 측정한 원시 두께값 (가공 전 데이터).</td></tr>
+          <tr><td><strong>모션위치 (X)</strong></td><td>모션 스테이지의 현재 좌표 (mm). 이 데이터는 100~930 mm 구간을 이동.</td></tr>
+          <tr><td><strong>Threshold</strong></td><td>2차 엣지 판별 기준값. 이 값을 두께가 넘으면 소재 영역으로 판단.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
   <div class="chart-wrap">
     <div class="chart-title">전체 RawData 차트 (모션위치 100~930 mm)</div>
     <div class="chart-legend">
@@ -204,6 +235,7 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
         </div>
         <input type="range" id="sl-minthk" min="10" max="120" value="50" step="1">
         <div class="slider-range"><span>10 um</span><span>120 um</span></div>
+        <div style="font-size:.78rem;color:#64748b;margin-top:.3rem;">이 값보다 얇은 구간은 소재가 없는 것으로 봅니다.</div>
       </div>
 
       <div class="slider-item">
@@ -213,6 +245,7 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
         </div>
         <input type="range" id="sl-edgecut" min="1" max="50" value="10" step="1">
         <div class="slider-range"><span>1 um</span><span>50 um</span></div>
+        <div style="font-size:.78rem;color:#64748b;margin-top:.3rem;">이 값을 높일수록 더 급격한 변화만 엣지로 인식합니다.</div>
       </div>
     </div>
 
@@ -227,9 +260,24 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
         </div>
         <input type="range" id="sl-ratio" min="0.50" max="1.00" value="0.90" step="0.01">
         <div class="slider-range"><span>0.50</span><span>1.00</span></div>
+        <div style="font-size:.78rem;color:#64748b;margin-top:.3rem;">이 값을 낮출수록 기준선이 낮아져 엣지가 더 바깥쪽에서 검출됩니다.</div>
       </div>
 
     </div>
+  </div>
+
+  <!-- 상황별 파라미터 조정 가이드 -->
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="card-title">🛠️ 상황별 파라미터 조정 가이드</div>
+    <table class="tbl">
+      <thead><tr><th>상황</th><th>원인</th><th>조치</th></tr></thead>
+      <tbody>
+        <tr><td>엣지가 전혀 검출되지 않음</td><td>Edge Cut 또는 최소두께가 너무 높음</td><td>Edge Cut을 낮추거나 최소두께를 낮춤</td></tr>
+        <tr><td>소재 외부 노이즈가 엣지로 잘못 검출됨</td><td>Edge Cut 또는 최소두께가 너무 낮음</td><td>Edge Cut 또는 최소두께를 높임</td></tr>
+        <tr><td>엣지 위치가 실제보다 안쪽으로 잡힘</td><td>EdgeFindRatio가 너무 높음</td><td>EdgeFindRatio를 0.85 ~ 0.88 수준으로 낮춤</td></tr>
+        <tr><td>슬라이더 조작 후 원래대로 되돌리고 싶음</td><td>—</td><td>"기본값으로 초기화" 버튼 클릭</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- 현재 연산 결과 -->
@@ -299,6 +347,10 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
           두께가 <strong>급격히 내려가는 구간</strong>에서 종료 엣지를 찾습니다.<br>
           · 조건1: X와 X+5 사이에 <em>큰 폭의 하강</em>이 있어야 함<br>
           · 조건2: 현재 두께가 충분히 크고, X−5보다 <em>이미 낮아야</em> 함(하강 중)
+        </div>
+        <div style="margin-top:.6rem;padding:.55rem .8rem;background:#ede9fe;border-radius:6px;font-size:.82rem;color:#5b21b6;">
+          🔄 <strong>스캔 방향:</strong> 데이터 맨 끝(930mm)에서부터 <strong>역방향(←)으로</strong> 탐색합니다.
+          소재 우측 하강 엣지를 정확히 검출하기 위한 방식입니다.
         </div>
       </div>
     </div>
@@ -408,18 +460,6 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
           </div>
         </div>
 
-        <div class="step" style="background:#faf5ff;border-color:#c4b5fd;">
-          <div class="step-num" style="background:#7c3aed;">3</div>
-          <div class="step-body">
-            <div class="s-tag" style="background:#ede9fe;color:#5b21b6;">조건 3</div>
-            <div class="s-title">역방향 스캔</div>
-            <div class="s-detail">
-              종료 엣지는 데이터의 <strong>맨 끝(930mm)에서부터 반대 방향(←)으로</strong> 연산합니다.<br>
-              조건 1 · 2를 모두 만족하는 <strong>첫 번째 위치</strong>를 종료 엣지로 채택합니다.<br>
-              <span style="color:#6b7280;font-size:.8rem;">※ 순방향 스캔과 달리, 소재 우측 하강 엣지를 정확히 검출하기 위한 방식입니다.</span>
-            </div>
-          </div>
-        </div>
 
       </div>
     </div>
@@ -561,6 +601,9 @@ input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer;height:6px}
           <td id="t-e1sx">214</td><td id="t-e1st">72.8</td><td>EdgeCut + 최소두께 + 상승구간</td></tr>
         <tr><td>1차</td><td><span class="badge-end">종료</span></td>
           <td id="t-e1ex">719</td><td id="t-e1et">50.3</td><td>EdgeCut + 최소두께 + 하강구간</td></tr>
+        <tr><td colspan="5" style="padding:.4rem 1rem;background:#fff7ed;border-top:2px solid #ea580c;">
+          <span style="font-size:.8rem;font-weight:800;color:#ea580c;">★ 최종 사용값 — 이후 공정에 실제 사용되는 엣지 위치</span>
+        </td></tr>
         <tr class="hl"><td>2차 (최종)</td><td><span class="badge-fs">시작</span></td>
           <td id="t-e2sx">216</td><td id="t-e2st">128.1</td><td>Threshold 초과 + 상승구간</td></tr>
         <tr class="hl"><td>2차 (최종)</td><td><span class="badge-fe">종료</span></td>
@@ -831,10 +874,10 @@ function updateAll(){
   $('ri-warn').style.display = noEdge ? 'block':'none';
 
   // Live bar
-  txt('lb-e1s', s1 ? `X=${s1.x}` : '미검출');
-  txt('lb-e1e', e1 ? `X=${e1.x}` : '미검출');
-  txt('lb-e2s', s2 ? `X=${s2.x}` : '미검출');
-  txt('lb-e2e', e2 ? `X=${e2.x}` : '미검출');
+  txt('lb-e1s', s1 ? `${s1.x} mm` : '미검출');
+  txt('lb-e1e', e1 ? `${e1.x} mm` : '미검출');
+  txt('lb-e2s', s2 ? `${s2.x} mm` : '미검출');
+  txt('lb-e2e', e2 ? `${e2.x} mm` : '미검출');
 
   // Result cards
   if(s1) setRI('ri-e1s','result-item ri-red',`X = ${s1.x}`,`두께 ${s1.t} um`);
